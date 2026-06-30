@@ -1,0 +1,26 @@
+Unable to resolve "@expo/vector-icons" from "src\screens\SplashScreen.js"
+  2 | import { View, Text, StyleSheet } from 'react-native';
+  3 | import { theme } from '../theme/theme';
+> 4 | import { Ionicons } from '@expo/vector-icons';
+    |                           ^
+  5 |
+  6 | const SplashScreen = ({ navigation }) => {
+  7 |   useEffect(() => {
+
+Import stack:
+
+ src\screens\SplashScreen.js
+ | import "@expo/vector-icons"
+
+ src\navigation\RootNavigator.js
+ | import "../screens/SplashScreen"
+
+ App.js
+ | import "./src/navigation/RootNavigator"
+
+ index.js
+ | import "./App"
+
+ 
+ | import "./index"
+

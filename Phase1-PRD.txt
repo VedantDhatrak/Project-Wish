@@ -1,0 +1,270 @@
+# Product Requirements Document (PRD)
+
+# Project Name
+
+**Project Wish (Smart Shopping Organizer)**
+
+## Phase
+
+**Phase 1 – Unified Wishlist (MVP)**
+
+---
+
+# 1. Product Vision
+
+Shopping today is fragmented across multiple e-commerce platforms like Amazon, Flipkart, Myntra, Ajio, Nykaa, etc. Every platform maintains its own wishlist, making it difficult for users to remember where they saved a particular product.
+
+Smart Shopping Organizer solves this by providing one centralized wishlist where users can save products from any shopping platform using the native Share option.
+
+The application acts as a shopping companion, not another marketplace.
+
+---
+
+# 2. Problem Statement
+
+Users frequently browse products across different shopping applications.
+
+Current problems include:
+
+* Wishlists are spread across multiple apps.
+* Users forget where a product was saved.
+* Finding previously saved products requires opening multiple applications.
+* There is no single place to organize products from different shopping platforms.
+
+---
+
+# 3. Goal
+
+Build a centralized wishlist application that allows users to save products from any supported shopping platform into one organized location.
+
+---
+
+# 4. Target Users
+
+* Online shoppers
+* Deal hunters
+* Users who compare products before purchasing
+* People who shop across multiple platforms
+
+---
+
+# 5. Scope (Phase 1)
+
+### Included
+
+* User Registration
+* Mobile OTP Login
+* Home Dashboard
+* Unified Wishlist
+* Product Saving through Share Intent
+* Product Details Screen
+* Categories
+* Search Wishlist
+* Delete Product
+* Edit Notes
+* Platform Identification
+* Recent Products
+
+### Not Included
+
+* Price Tracking
+* Price History
+* Community Features
+* Rewards
+* Coupons
+* AI Recommendations
+* Checkout
+* Payment Gateway
+
+---
+
+# 6. Functional Requirements
+
+## Authentication
+
+User should be able to:
+
+* Login using mobile number
+* Verify using OTP
+* Stay logged in
+
+---
+
+## Add Product
+
+User opens Amazon/Flipkart/Myntra.
+
+Clicks:
+
+Share → Smart Shopping Organizer
+
+Application automatically extracts:
+
+* Product Name
+* Product Image
+* Platform
+* Product URL
+* Current Price (captured when saved)
+
+Product is stored in wishlist.
+
+---
+
+## Wishlist
+
+Display all saved products.
+
+Each card contains:
+
+* Product Image
+* Product Name
+* Platform Logo
+* Saved Price
+* Date Added
+* Category
+
+---
+
+## Search
+
+User can search by:
+
+* Product Name
+* Platform
+* Category
+
+---
+
+## Categories
+
+Examples:
+
+* Electronics
+* Fashion
+* Home
+* Beauty
+* Grocery
+* Books
+* Others
+
+---
+
+## Product Details
+
+Display:
+
+* Product Image
+* Product Name
+* Current Saved Price
+* Platform
+* Product URL
+* Notes
+* Date Added
+
+Actions:
+
+* Open Original Product
+* Delete
+* Edit Notes
+
+---
+
+# 7. Non Functional Requirements
+
+* Fast loading
+* Responsive UI
+* Offline cache for wishlist
+* Secure authentication
+* Simple onboarding
+* Clean modern UI
+
+---
+
+# 8. User Flow
+
+User Login
+
+↓
+
+Home Dashboard
+
+↓
+
+Browse Shopping App
+
+↓
+
+Share Product
+
+↓
+
+Smart Shopping Organizer Opens
+
+↓
+
+Extract Product Information
+
+↓
+
+Save Product
+
+↓
+
+Unified Wishlist Updated
+
+↓
+
+User Can Search / View Product
+
+---
+
+# 9. Data Model
+
+## User
+
+* id
+* mobileNumber
+* createdAt
+
+---
+
+## Product
+
+* id
+* userId
+* productName
+* image
+* platform
+* productURL
+* savedPrice
+* category
+* notes
+* createdAt
+
+---
+
+# 10. Success Metrics
+
+* Number of products saved
+* Daily Active Users
+* Weekly Returning Users
+* Average wishlist size
+* Average session duration
+
+---
+
+# 11. Future Scope
+
+Phase 2
+
+* Price Tracking
+* Price History
+* Alerts
+* Lowest Price Detection
+
+Phase 3
+
+* Community
+* Rewards
+* Shopping Discussions
+* Coupons

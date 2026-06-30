@@ -1,0 +1,44 @@
+Build Only frontend for now with JSX and keep the colors theme global so that it can be changed in future by single file update, se dummy data if data not avialbale for example logo.
+Build Only frontend for now with JSX and keep the colors theme global so that it can be changed in future by single file update, 
+
+# UI Blueprint Prompt
+
+Design a modern, premium mobile application UI for a product called **Smart Shopping Organizer**. The application theme should feel minimal, elegant and trustworthy. Think of a combination of Google Material Design, Notion simplicity, and modern fintech apps. Primary Color: Deep Blue (#2563EB). Accent: Green (#22C55E). Background: Light Gray (#F8FAFC). Cards: White with soft shadows and rounded corners. Use a clean sans-serif font with generous spacing.
+
+## Screens to Design
+
+### 1. Splash Screen
+
+App Logo, App Name, Tagline: "One Wishlist. Every Store."
+
+### 2. Login Screen
+
+Mobile Number field, Continue button, OTP Verification Screen.
+
+### 3. Home Screen
+
+Top App Bar, Greeting: "Hello, Vedant", Search Bar, Quick Stats: Total Saved Products, Categories, Recently Added. Below that: Wishlist Grid. Each Product Card contains: Product Image, Product Name, Shopping Platform Badge, Saved Price, Date Added. Floating Action Button: Label: "Add Product".
+
+### 4. Share Import Screen
+
+When a product is shared: Show loading animation, "Extracting Product...". Display extracted information: Product Image, Name, Platform, Saved Price, Category Selector, Notes. Buttons: Save Product, Cancel.
+
+### 5. Wishlist Screen
+
+Grid/List Toggle, Filters: Platform, Category, Search, Infinite scrolling.
+
+### 6. Product Details
+
+Large Product Image, Product Name, Platform Badge, Saved Price, Notes, Date Added. Buttons: Open Original Product, Edit Notes, Delete Product.
+
+### 7. Profile Screen
+
+Profile Picture, Mobile Number, Statistics, Products Saved, Favorite Category, Settings, About, Privacy Policy, Logout.
+
+## Bottom Navigation
+
+Home, Wishlist, Search, Profile.
+
+## Design Style
+
+Rounded cards (18–20 px), Smooth animations, Material ripple effects, Modern icons, Plenty of whitespace, Premium shopping experience, Responsive layout, Dark mode ready. The UI should look polished enough to be suitable for publishing on the Google Play Store and should prioritize ease of navigation and visual clarity.
