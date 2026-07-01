@@ -1,24 +1,72 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 import { theme } from '../theme/theme';
 import CustomButton from '../components/CustomButton';
 
-const ShareImportScreen = ({ navigation }) => {
+// Get local API URL automatically in Expo
+const getApiUrl = () => {
+  const debuggerHost = Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.expoConfig?.hostUri;
+  const localhost = debuggerHost ? debuggerHost.split(':')[0] : '10.0.2.2'; // default android emulator IP
+  return `http://${localhost}:3000/api`;
+};
+
+const ShareImportScreen = ({ route, navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [productData, setProductData] = useState(null);
   const [notes, setNotes] = useState('');
+  
+  const targetUrl = route.params?.url || '';
 
   useEffect(() => {
-    // Simulate extraction delay
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchProductDetails = async () => {
+      try {
+        const response = await fetch(`${getApiUrl()}/extract`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: targetUrl })
+        });
+        
+        if (!response.ok) throw new Error('Extraction failed');
+        
+        const data = await response.json();
+        setProductData(data);
+      } catch (error) {
+        Alert.alert("Error", "Could not extract product data. The site might be blocking us.");
+        navigation.goBack();
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const handleSave = () => {
-    navigation.goBack();
+    if (targetUrl) {
+      fetchProductDetails();
+    } else {
+      setIsLoading(false);
+    }
+  }, [targetUrl, navigation]);
+
+  const handleSave = async () => {
+    if (!productData) return;
+    
+    try {
+      const response = await fetch(`${getApiUrl()}/products`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...productData, notes })
+      });
+      
+      if (response.ok) {
+        Alert.alert("Success", "Product saved to your wishlist!");
+        navigation.goBack();
+      } else {
+        throw new Error('Failed to save');
+      }
+    } catch (error) {
+      Alert.alert("Error", "Could not save the product.");
+    }
   };
 
   if (isLoading) {
@@ -30,6 +78,8 @@ const ShareImportScreen = ({ navigation }) => {
     );
   }
 
+  if (!productData) return null;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView 
@@ -40,19 +90,23 @@ const ShareImportScreen = ({ navigation }) => {
           <Text style={styles.title}>Save Product</Text>
           
           <View style={styles.previewCard}>
-            <View style={styles.placeholderImage}>
-              <Text style={styles.placeholderText}>IMG</Text>
-            </View>
+            {productData.image ? (
+              <Image source={{ uri: productData.image }} style={styles.productImage} contentFit="cover" />
+            ) : (
+              <View style={styles.placeholderImage}>
+                <Text style={styles.placeholderText}>No IMG</Text>
+              </View>
+            )}
             <View style={styles.previewInfo}>
-              <Text style={styles.platformBadge}>Amazon</Text>
-              <Text style={styles.previewTitle} numberOfLines={2}>Sample Extracted Product Name</Text>
-              <Text style={styles.previewPrice}>₹9,999</Text>
+              <Text style={styles.platformBadge}>{productData.platform}</Text>
+              <Text style={styles.previewTitle} numberOfLines={2}>{productData.name}</Text>
+              <Text style={styles.previewPrice}>{productData.savedPrice}</Text>
             </View>
           </View>
 
           <Text style={styles.label}>Category</Text>
           <View style={styles.categorySelector}>
-            <Text style={styles.categoryText}>Electronics (Auto-detected)</Text>
+            <Text style={styles.categoryText}>{productData.category || 'Others'}</Text>
           </View>
 
           <Text style={styles.label}>Notes (Optional)</Text>
@@ -127,6 +181,12 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.s,
     justifyContent: 'center',
     alignItems: 'center',
+    marginRight: theme.spacing.m,
+  },
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: theme.borderRadius.s,
     marginRight: theme.spacing.m,
   },
   placeholderText: {
