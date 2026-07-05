@@ -1,12 +1,10 @@
 const express = require('express');
 const puppeteer = require('puppeteer-extra');
 const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+const Product = require('../models/Product');
 const router = express.Router();
 
 puppeteer.use(StealthPlugin());
-
-// In-memory mock database
-let products = [];
 
 /**
  * Helper to extract metadata using Headless Chrome (Puppeteer)
@@ -97,7 +95,7 @@ const extractProductMetadata = async (url) => {
     // Determine platform
     let platform = 'Other';
     const urlLower = url.toLowerCase();
-    if (urlLower.includes('amazon')) platform = 'Amazon';
+    if (urlLower.includes('amazon') || urlLower.includes('amzn.')) platform = 'Amazon';
     else if (urlLower.includes('flipkart')) platform = 'Flipkart';
     else if (urlLower.includes('myntra')) platform = 'Myntra';
     else if (urlLower.includes('ajio')) platform = 'Ajio';
@@ -137,32 +135,45 @@ router.post('/extract', async (req, res) => {
 });
 
 // Route: Save a product
-router.post('/products', (req, res) => {
+router.post('/products', async (req, res) => {
   const { name, image, platform, url, savedPrice, category, notes } = req.body;
   
   if (!url || !name) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const newProduct = {
-    id: Date.now().toString(),
-    name,
-    image,
-    platform,
-    url,
-    savedPrice,
-    category,
-    notes: notes || '',
-    createdAt: new Date().toISOString()
-  };
-
-  products.unshift(newProduct); // Add to beginning
-  res.status(201).json(newProduct);
+  try {
+    const newProduct = await Product.create({
+      name,
+      image,
+      platform,
+      url,
+      savedPrice,
+      category,
+      notes: notes || ''
+    });
+    res.status(201).json(newProduct);
+  } catch (error) {
+    console.error('Error saving product:', error);
+    res.status(500).json({ error: 'Failed to save product to database' });
+  }
 });
 
 // Route: Get all products
-router.get('/products', (req, res) => {
-  res.json(products);
+router.get('/products', async (req, res) => {
+  try {
+    // Return newest products first
+    const products = await Product.find().sort({ createdAt: -1 });
+    // Map _id to id so the frontend works seamlessly
+    const formattedProducts = products.map(p => ({
+      ...p._doc,
+      id: p._id.toString()
+    }));
+    res.json(formattedProducts);
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    res.status(500).json({ error: 'Failed to fetch products from database' });
+  }
 });
 
 module.exports = router;

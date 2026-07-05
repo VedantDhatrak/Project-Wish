@@ -1,18 +1,57 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import Constants from 'expo-constants';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme } from '../theme/theme';
-import { dummyProducts, dummyCategories } from '../data/dummyData';
+import { dummyCategories } from '../data/dummyData';
+
+const getApiUrl = () => {
+  const debuggerHost = Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.expoConfig?.hostUri;
+  const localhost = debuggerHost ? debuggerHost.split(':')[0] : '10.0.2.2';
+  return `http://${localhost}:3000/api`;
+};
 import ProductCard from '../components/ProductCard';
 
 const WishlistScreen = ({ navigation }) => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [isGridView, setIsGridView] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProducts = async () => {
+        setIsLoading(true);
+        try {
+          const res = await fetch(`${getApiUrl()}/products`);
+          const data = await res.json();
+          setProducts(data);
+        } catch (error) {
+          console.error('Failed to fetch products:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchProducts();
+    }, [])
+  );
 
   const filteredProducts = activeCategory === 'All' 
-    ? dummyProducts 
-    : dummyProducts.filter(p => p.category === activeCategory);
+    ? products 
+    : products.filter(p => p.category === activeCategory);
+
+  const renderEmptyState = () => {
+    if (isLoading) return null;
+    return (
+      <View style={styles.emptyContainer}>
+        <MaterialCommunityIcons name="shopping-search" size={80} color={theme.colors.textSecondary} style={{ marginBottom: 16 }} />
+        <Text style={styles.emptyTitle}>Your Wishlist is Empty</Text>
+        <Text style={styles.emptySubtitle}>Start adding products from your favorite stores to track prices and keep them organized!</Text>
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -39,23 +78,30 @@ const WishlistScreen = ({ navigation }) => {
         </ScrollView>
       </View>
 
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => item.id}
-        key={isGridView ? 'G' : 'L'} // force re-render when changing columns
-        numColumns={isGridView ? 2 : 1}
-        renderItem={({ item }) => (
-          <View style={isGridView ? styles.gridItem : styles.listItem}>
-            <ProductCard 
-              product={item} 
-              isGrid={isGridView}
-              onPress={() => navigation.navigate('ProductDetails', { product: item })}
-            />
-          </View>
-        )}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          keyExtractor={(item) => item.id}
+          key={isGridView ? 'G' : 'L'} 
+          numColumns={isGridView ? 2 : 1}
+          renderItem={({ item }) => (
+            <View style={isGridView ? styles.gridItem : styles.listItem}>
+              <ProductCard 
+                product={item} 
+                isGrid={isGridView}
+                onPress={() => navigation.navigate('ProductDetails', { product: item })}
+              />
+            </View>
+          )}
+          contentContainerStyle={[styles.listContainer, filteredProducts.length === 0 && { flex: 1 }]}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={renderEmptyState}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -114,9 +160,31 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     flex: 1,
-    maxWidth: '50%', // simple grid split
-    // Need to adjust internal ProductCard styles for grid view in a real app
-    // For MVP, we wrap the existing card
+    maxWidth: '50%',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.xl,
+    marginTop: 40,
+  },
+  emptyTitle: {
+    ...theme.typography.h2,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.s,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   }
 });
 

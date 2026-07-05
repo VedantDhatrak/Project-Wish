@@ -1,18 +1,46 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import Constants from 'expo-constants';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { theme } from '../theme/theme';
-import { dummyProducts, dummyCategories } from '../data/dummyData';
+
+const getApiUrl = () => {
+  const debuggerHost = Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.expoConfig?.hostUri;
+  const localhost = debuggerHost ? debuggerHost.split(':')[0] : '10.0.2.2';
+  return `http://${localhost}:3000/api`;
+};
 import ProductCard from '../components/ProductCard';
 import UrlInputModal from '../components/UrlInputModal';
 
 const HomeScreen = ({ navigation }) => {
   const [isUrlModalVisible, setIsUrlModalVisible] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProducts = async () => {
+        setIsLoading(true);
+        try {
+          const res = await fetch(`${getApiUrl()}/products`);
+          const data = await res.json();
+          setProducts(data);
+        } catch (error) {
+          console.error('Failed to fetch products:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchProducts();
+    }, [])
+  );
+
+  const uniqueCategories = [...new Set(products.map(p => p.category))];
 
   const handleUrlSubmit = (url) => {
     setIsUrlModalVisible(false);
-    // In a real app, you might pass the URL to the next screen
     navigation.navigate('ShareImport', { url });
   };
 
@@ -21,7 +49,7 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View>
           <Text style={styles.greeting}>Hello, Vedant</Text>
-          <Text style={styles.subtitle}>You have {dummyProducts.length} items saved</Text>
+          <Text style={styles.subtitle}>You have {products.length} items saved</Text>
         </View>
         <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile')}>
           <Ionicons name="person-circle" size={40} color={theme.colors.primary} />
@@ -30,11 +58,11 @@ const HomeScreen = ({ navigation }) => {
 
       <View style={styles.statsContainer}>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{dummyProducts.length}</Text>
+          <Text style={styles.statNumber}>{products.length}</Text>
           <Text style={styles.statLabel}>Products</Text>
         </View>
         <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{dummyCategories.length - 1}</Text>
+          <Text style={styles.statNumber}>{uniqueCategories.length}</Text>
           <Text style={styles.statLabel}>Categories</Text>
         </View>
       </View>
@@ -46,18 +74,30 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={dummyProducts.slice(0, 3)} // Show only recent 3
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <ProductCard 
-            product={item} 
-            onPress={() => navigation.navigate('ProductDetails', { product: item })}
-          />
-        )}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={products.slice(0, 3)} // Show only recent 3
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <ProductCard 
+              product={item} 
+              onPress={() => navigation.navigate('ProductDetails', { product: item })}
+            />
+          )}
+          contentContainerStyle={[styles.listContainer, products.length === 0 && { flex: 1, paddingBottom: 0 }]}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={() => (
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons name="basket-outline" size={60} color={theme.colors.textSecondary} style={{ marginBottom: 16 }} />
+              <Text style={styles.emptySubtitle}>No recently added products.</Text>
+            </View>
+          )}
+        />
+      )}
 
       <TouchableOpacity 
         style={styles.fab}
@@ -157,6 +197,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  emptySubtitle: {
+    ...theme.typography.body,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
   }
 });
 
