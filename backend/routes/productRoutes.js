@@ -31,7 +31,26 @@ const extractProductMetadata = async (url) => {
     const extracted = await page.evaluate(() => {
       // Title
       let name = document.querySelector('meta[property="og:title"]')?.content || document.title || 'Unknown Product';
+      
+      // Try to get a cleaner name from h1 if the meta title is generic SEO garbage
+      const h1Text = document.querySelector('h1')?.innerText?.trim();
+      if (h1Text && (name.includes('Online Shopping Site') || name === 'Unknown Product')) {
+        name = h1Text;
+      }
+
+      // Strip trailing branding separated by | or -
       name = name.split('|')[0].split('-')[0].trim();
+
+      // Strip common prefixes even with leading whitespace
+      name = name.replace(/^\s*(Buy|Shop)\s+/i, '');
+
+      // Strip common suffixes
+      name = name.replace(/Price in India.*/i, '');
+      name = name.replace(/at lowest prices.*/i, '');
+      name = name.replace(/Online Shopping Site.*/i, '');
+      name = name.replace(/Buy Online.*/i, '');
+
+      name = name.trim() || 'Unknown Product';
 
       // Image
       let image = document.querySelector('meta[property="og:image"]')?.content || 
@@ -81,6 +100,8 @@ const extractProductMetadata = async (url) => {
                      '0';
       
       let price = rawPrice.replace(/[^\d.,]/g, '');
+      // Remove trailing dot or comma if any
+      price = price.replace(/[.,]+$/, '');
       if (price && price !== '0') {
         price = '₹' + price;
       } else {
@@ -159,12 +180,10 @@ router.post('/products', async (req, res) => {
   }
 });
 
-// Route: Get all products
+// Route: Get all active products
 router.get('/products', async (req, res) => {
   try {
-    // Return newest products first
-    const products = await Product.find().sort({ createdAt: -1 });
-    // Map _id to id so the frontend works seamlessly
+    const products = await Product.find({ isArchived: false }).sort({ createdAt: -1 });
     const formattedProducts = products.map(p => ({
       ...p._doc,
       id: p._id.toString()
@@ -173,6 +192,54 @@ router.get('/products', async (req, res) => {
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ error: 'Failed to fetch products from database' });
+  }
+});
+
+// Route: Get archived products
+router.get('/products/archived', async (req, res) => {
+  try {
+    const products = await Product.find({ isArchived: true }).sort({ createdAt: -1 });
+    const formattedProducts = products.map(p => ({
+      ...p._doc,
+      id: p._id.toString()
+    }));
+    res.json(formattedProducts);
+  } catch (error) {
+    console.error('Error fetching archived products:', error);
+    res.status(500).json({ error: 'Failed to fetch archived products' });
+  }
+});
+
+// Route: Archive a product
+router.put('/products/:id/archive', async (req, res) => {
+  try {
+    await Product.findByIdAndUpdate(req.params.id, { isArchived: true });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error archiving product:', error);
+    res.status(500).json({ error: 'Failed to archive product' });
+  }
+});
+
+// Route: Restore a product
+router.put('/products/:id/restore', async (req, res) => {
+  try {
+    await Product.findByIdAndUpdate(req.params.id, { isArchived: false });
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error restoring product:', error);
+    res.status(500).json({ error: 'Failed to restore product' });
+  }
+});
+
+// Route: Permanently delete a product
+router.delete('/products/:id', async (req, res) => {
+  try {
+    await Product.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    res.status(500).json({ error: 'Failed to delete product' });
   }
 });
 

@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
@@ -56,57 +56,68 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{products.length}</Text>
-          <Text style={styles.statLabel}>Products</Text>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40, flexGrow: 1 }}>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{products.length}</Text>
+            <Text style={styles.statLabel}>Products</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{uniqueCategories.length}</Text>
+            <Text style={styles.statLabel}>Categories</Text>
+          </View>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{uniqueCategories.length}</Text>
-          <Text style={styles.statLabel}>Categories</Text>
-        </View>
-      </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Recently Added</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Wishlist')}>
-          <Text style={styles.seeAll}>See All</Text>
-        </TouchableOpacity>
-      </View>
-
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recently Added</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Wishlist')}>
+            <Text style={styles.seeAll}>See All</Text>
+          </TouchableOpacity>
         </View>
-      ) : (
-        <FlatList
-          data={products.slice(0, 3)} // Show only recent 3
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <ProductCard 
-              product={item} 
-              onPress={() => navigation.navigate('ProductDetails', { product: item })}
-            />
-          )}
-          contentContainerStyle={[styles.listContainer, products.length === 0 && { flex: 1, paddingBottom: 0 }]}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="basket-outline" size={60} color={theme.colors.textSecondary} style={{ marginBottom: 16 }} />
-              <Text style={styles.emptySubtitle}>No recently added products.</Text>
-            </View>
-          )}
-        />
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : (
+        <View>
+          <FlatList
+            data={products.slice(0, 3)} // Show only recent 3
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <ProductCard 
+                product={item} 
+                onPress={() => navigation.navigate('ProductDetails', { product: item })}
+              />
+            )}
+            showsVerticalScrollIndicator={false}
+            scrollEnabled={false} // Prevent nested scrolling inside ScrollView if added
+            ListEmptyComponent={() => (
+              <View style={styles.emptyContainer}>
+                <MaterialCommunityIcons name="basket-outline" size={60} color={theme.colors.textSecondary} style={{ marginBottom: 16 }} />
+                <Text style={styles.emptySubtitle}>No recently added products.</Text>
+              </View>
+            )}
+          />
+        </View>
       )}
+    </ScrollView>
 
-      <TouchableOpacity 
-        style={styles.fab}
-        onPress={() => setIsUrlModalVisible(true)}
-        activeOpacity={0.8}
-      >
-        <Ionicons name="add" size={24} color="#FFF" />
-        <Text style={styles.fabText}>Add</Text>
-      </TouchableOpacity>
+      <View style={styles.addCardContainer}>
+        <View style={styles.addCard}>
+          <View style={styles.addCardContent}>
+            <Ionicons name="link-outline" size={24} color={theme.colors.primary} />
+            <Text style={styles.addCardTitle}>Add a new product</Text>
+            <Text style={styles.addCardSubtitle}>Paste any link to save it here</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.addCardButton}
+            onPress={() => setIsUrlModalVisible(true)}
+          >
+            <Text style={styles.addCardButtonText}>+ Paste Link</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <UrlInputModal 
         visible={isUrlModalVisible} 
@@ -143,15 +154,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: theme.spacing.m,
     marginBottom: theme.spacing.m,
+    // backgroundColor:"red"
   },
   statCard: {
     flex: 1,
     backgroundColor: theme.colors.card,
     borderRadius: theme.borderRadius.m,
-    padding: theme.spacing.m,
+    padding: theme.spacing.xs,
     marginRight: theme.spacing.s,
     ...theme.shadows.card,
     alignItems: 'center',
+    // backgroundColor:"green"
   },
   statNumber: {
     ...theme.typography.h2,
@@ -176,27 +189,46 @@ const styles = StyleSheet.create({
     color: theme.colors.primary,
     fontWeight: '600',
   },
-  listContainer: {
-    paddingBottom: 100, // padding for FAB
+  addCardContainer: {
+    paddingHorizontal: theme.spacing.m,
+    // paddingBottom: theme.spacing.xl,
+    // marginTop: theme.spacing.m,
+    // backgroundColor:"red",
   },
-  fab: {
-    position: 'absolute',
-    bottom: theme.spacing.l,
-    right: theme.spacing.l,
-    backgroundColor: theme.colors.primary,
+  addCard: {
+    backgroundColor: theme.colors.card,
+    borderRadius: theme.borderRadius.m,
+    padding: theme.spacing.m,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 30,
+    justifyContent: 'space-between',
     ...theme.shadows.card,
-    elevation: 5,
   },
-  fabText: {
+  addCardContent: {
+    flex: 1,
+  },
+  addCardTitle: {
+    ...theme.typography.h3,
+    marginTop: 4,
+  },
+  addCardSubtitle: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: 2,
+  },
+  addCardButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 40, // Keeps it sleek and ~50% of card height visually
+  },
+  addCardButtonText: {
     color: '#FFF',
     fontWeight: 'bold',
-    marginLeft: 8,
-    fontSize: 16,
+    fontSize: 14,
   },
   loadingContainer: {
     flex: 1,

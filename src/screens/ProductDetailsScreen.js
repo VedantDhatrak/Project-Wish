@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme/theme';
@@ -40,9 +40,21 @@ const ProductDetailsScreen = ({ route, navigation }) => {
 
           <View style={styles.actionsContainer}>
             <CustomButton 
-              title="Open Original Product" 
+              title="Visit Store" 
               variant="primary" 
               style={styles.actionBtn} 
+              onPress={async () => {
+                if (product.url) {
+                  const supported = await Linking.canOpenURL(product.url);
+                  if (supported) {
+                    await Linking.openURL(product.url);
+                  } else {
+                    Alert.alert('Error', 'Cannot open this URL.');
+                  }
+                } else {
+                  Alert.alert('Error', 'No URL available for this product.');
+                }
+              }}
             />
             <CustomButton 
               title="Edit Notes" 

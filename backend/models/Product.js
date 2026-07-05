@@ -29,6 +29,10 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  isArchived: {
+    type: Boolean,
+    default: false,
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);

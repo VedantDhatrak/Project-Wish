@@ -6,6 +6,7 @@ import LoginScreen from '../screens/LoginScreen';
 import MainTabNavigator from './MainTabNavigator';
 import ProductDetailsScreen from '../screens/ProductDetailsScreen';
 import ShareImportScreen from '../screens/ShareImportScreen';
+import RemovedItemsScreen from '../screens/RemovedItemsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ const RootNavigator = () => {
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
       <Stack.Screen name="ShareImport" component={ShareImportScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="RemovedItems" component={RemovedItemsScreen} />
     </Stack.Navigator>
   );
 };
