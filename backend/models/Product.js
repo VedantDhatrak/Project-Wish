@@ -32,6 +32,10 @@ const productSchema = new mongoose.Schema({
   isArchived: {
     type: Boolean,
     default: false,
+  },
+  displayOrder: {
+    type: Number,
+    default: () => -Date.now(),
   }
 }, { timestamps: true });
 

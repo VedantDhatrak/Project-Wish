@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { theme } from '../theme/theme';
 
-const ProductCard = ({ product, onPress, isGrid = false }) => {
+const ProductCard = ({ product, onPress, onLongPress, isGrid = false }) => {
   return (
     <TouchableOpacity 
       style={[styles.card, isGrid && styles.gridCard]} 
       onPress={onPress} 
+      onLongPress={onLongPress}
+      delayLongPress={200}
       activeOpacity={0.9}
     >
       <View style={isGrid ? styles.gridImageContainer : null}>

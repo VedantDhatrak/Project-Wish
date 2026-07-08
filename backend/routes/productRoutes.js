@@ -183,7 +183,7 @@ router.post('/products', async (req, res) => {
 // Route: Get all active products
 router.get('/products', async (req, res) => {
   try {
-    const products = await Product.find({ isArchived: false }).sort({ createdAt: -1 });
+    const products = await Product.find({ isArchived: false }).sort({ displayOrder: 1, createdAt: -1 });
     const formattedProducts = products.map(p => ({
       ...p._doc,
       id: p._id.toString()
@@ -198,7 +198,7 @@ router.get('/products', async (req, res) => {
 // Route: Get archived products
 router.get('/products/archived', async (req, res) => {
   try {
-    const products = await Product.find({ isArchived: true }).sort({ createdAt: -1 });
+    const products = await Product.find({ isArchived: true }).sort({ displayOrder: 1, createdAt: -1 });
     const formattedProducts = products.map(p => ({
       ...p._doc,
       id: p._id.toString()
@@ -240,6 +240,33 @@ router.delete('/products/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting product:', error);
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// Route: Reorder products
+router.put('/products/reorder', async (req, res) => {
+  const { orderedIds } = req.body;
+  if (!orderedIds || !Array.isArray(orderedIds)) {
+    return res.status(400).json({ error: 'orderedIds array is required' });
+  }
+
+  try {
+    // Bulk update the displayOrder for each ID based on its array index
+    const bulkOps = orderedIds.map((id, index) => ({
+      updateOne: {
+        filter: { _id: id },
+        update: { displayOrder: index }
+      }
+    }));
+    
+    if (bulkOps.length > 0) {
+      await Product.bulkWrite(bulkOps);
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error reordering products:', error);
+    res.status(500).json({ error: 'Failed to reorder products' });
   }
 });
 

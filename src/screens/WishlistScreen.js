@@ -1,19 +1,20 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import Constants from 'expo-constants';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { SwipeListView } from 'react-native-swipe-list-view';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { theme } from '../theme/theme';
 import { dummyCategories } from '../data/dummyData';
+import ProductCard from '../components/ProductCard';
 
 const getApiUrl = () => {
   const debuggerHost = Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.expoConfig?.hostUri;
   const localhost = debuggerHost ? debuggerHost.split(':')[0] : '10.0.2.2';
   return `http://${localhost}:3000/api`;
 };
-import ProductCard from '../components/ProductCard';
 
 const WishlistScreen = ({ navigation }) => {
   const [activeCategory, setActiveCategory] = useState('All');
@@ -41,16 +42,26 @@ const WishlistScreen = ({ navigation }) => {
 
   const archiveProduct = async (id) => {
     try {
-      // Optimistic update
       setProducts(prev => prev.filter(p => p.id !== id));
-      
-      const res = await fetch(`${getApiUrl()}/products/${id}/archive`, {
-        method: 'PUT'
-      });
+      const res = await fetch(`${getApiUrl()}/products/${id}/archive`, { method: 'PUT' });
       if (!res.ok) throw new Error('Failed to archive');
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to remove product');
+    }
+  };
+
+  const handleDragEnd = async ({ data }) => {
+    setProducts(data);
+    try {
+      const orderedIds = data.map(p => p.id);
+      await fetch(`${getApiUrl()}/products/reorder`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderedIds })
+      });
+    } catch (error) {
+      console.error('Failed to reorder:', error);
     }
   };
 
@@ -68,6 +79,38 @@ const WishlistScreen = ({ navigation }) => {
       </View>
     );
   };
+
+  const renderRightActions = (id) => (
+    <TouchableOpacity onPress={() => archiveProduct(id)} style={styles.archiveAction}>
+      <Ionicons name="trash" size={24} color="#fff" />
+      <Text style={styles.archiveText}>Remove</Text>
+    </TouchableOpacity>
+  );
+
+  const renderItemDraggable = ({ item, drag, isActive }) => (
+    <ScaleDecorator>
+      <Swipeable renderRightActions={() => renderRightActions(item.id)} overshootRight={false}>
+        <View style={[styles.listItem, { opacity: isActive ? 0.8 : 1 }]}>
+          <ProductCard 
+            product={item} 
+            isGrid={false}
+            onPress={() => navigation.navigate('ProductDetails', { product: item })}
+            onLongPress={drag}
+          />
+        </View>
+      </Swipeable>
+    </ScaleDecorator>
+  );
+
+  const renderItemGrid = ({ item }) => (
+    <View style={styles.gridItem}>
+      <ProductCard 
+        product={item} 
+        isGrid={true}
+        onPress={() => navigation.navigate('ProductDetails', { product: item })}
+      />
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -104,38 +147,27 @@ const WishlistScreen = ({ navigation }) => {
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       ) : (
-        <SwipeListView
-          data={filteredProducts}
-          keyExtractor={(item) => item.id}
-          key={isGridView ? 'G' : 'L'} 
-          numColumns={isGridView ? 2 : 1}
-          renderItem={({ item }) => (
-            <View style={isGridView ? styles.gridItem : styles.listItem}>
-              <ProductCard 
-                product={item} 
-                isGrid={isGridView}
-                onPress={() => navigation.navigate('ProductDetails', { product: item })}
-              />
-            </View>
-          )}
-          renderHiddenItem={({ item }) => (
-            !isGridView ? ( // Disable swipe in grid view for now
-              <View style={styles.rowBack}>
-                <View style={[styles.backRightBtn, styles.backRightBtnRight]}>
-                  <TouchableOpacity onPress={() => archiveProduct(item.id)} style={styles.archiveAction}>
-                    <Ionicons name="trash" size={24} color="#fff" />
-                    <Text style={styles.archiveText}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : null
-          )}
-          disableRightSwipe
-          rightOpenValue={-80}
-          contentContainerStyle={[styles.listContainer, filteredProducts.length === 0 && { flex: 1 }]}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
-        />
+        isGridView ? (
+          <FlatList
+            data={filteredProducts}
+            keyExtractor={(item) => item.id}
+            numColumns={2}
+            renderItem={renderItemGrid}
+            contentContainerStyle={[styles.listContainer, filteredProducts.length === 0 && { flex: 1 }]}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyState}
+          />
+        ) : (
+          <DraggableFlatList
+            data={filteredProducts}
+            keyExtractor={(item) => item.id}
+            onDragEnd={handleDragEnd}
+            renderItem={renderItemDraggable}
+            contentContainerStyle={[styles.listContainer, filteredProducts.length === 0 && { flex: 1 }]}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={renderEmptyState}
+          />
+        )
       )}
     </SafeAreaView>
   );
@@ -155,9 +187,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...theme.typography.h1,
-  },
-  toggleBtn: {
-    padding: theme.spacing.xs,
   },
   filterContainer: {
     marginBottom: theme.spacing.s,
@@ -229,36 +258,15 @@ const styles = StyleSheet.create({
   iconBtn: {
     padding: theme.spacing.xs,
   },
-  rowBack: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingLeft: 15,
-    marginHorizontal: theme.spacing.m,
-    marginVertical: theme.spacing.s,
-    borderRadius: theme.borderRadius.l,
-  },
-  backRightBtn: {
-    alignItems: 'center',
-    bottom: 0,
-    justifyContent: 'center',
-    position: 'absolute',
-    top: 0,
-    width: 80,
-  },
-  backRightBtnRight: {
+  archiveAction: {
     backgroundColor: theme.colors.error,
-    right: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    marginVertical: theme.spacing.s,
+    marginRight: theme.spacing.m,
     borderTopRightRadius: theme.borderRadius.l,
     borderBottomRightRadius: theme.borderRadius.l,
-  },
-  archiveAction: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    width: '100%',
   },
   archiveText: {
     color: '#fff',
